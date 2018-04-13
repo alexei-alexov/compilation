@@ -1,2 +1,3 @@
-# compilation
-Repos for practicals of `Compilation Theory`
+# Compilation
+
+Repos for `Compilation Theory` exercises!
