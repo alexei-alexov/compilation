@@ -7,14 +7,6 @@ import re
 from enum import Enum
 
 
-def main():
-    """Main script part"""
-    source_path = (input("Enter, please path to source files: ") or "src")
-
-    # with open(os.path.join(source_path, "source.py")) as source_file:
-    #     for line in source_file:
-
-
 PASCAL_O = [
     '+', '-', '*', '/', '%',                   # Arithmetic Operators
     '=', '<>', '>', '<', '>=', '<=', '><',           # Relational Operators
@@ -30,10 +22,10 @@ def get_consts():
     if not result_filename:
         result_filename = "result.consts"
 
-    c_pattern = r"""\w+\ *=\ *((".*?")|('.')|(\#))()?"""
+    # c_pattern = r"""\w+\ *=\ *((".*?")|('.')|(\#))()?"""
 
     with open(source_filename) as source_file, open(result_filename, 'w') as result_file:
-        for line in source_filename:
+        for line in source_file:
             # check if const part is ended.
             if re.match(r"(var)|(begin)", line, flags=re.I):
                 break
