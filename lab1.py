@@ -15,6 +15,20 @@ PASCAL_O = [
 ]
 PASCAL_BO = ['and', 'and then', 'or', 'or else', 'not', ] # Boolean Operators
 
+PASCAL_HASH_CHAR = r'\#\d+'
+PASCAL_SINGLE_CHAR = r"'.'"
+PASCAL_STRING = r'".*"'
+
+PSC_VAR = r'\w+'
+PSC_ASSIGN = r' := '
+PSC_STRING_PART = r'(?:%s)' % ("|".join(map(lambda x: "(%s)" % (x, ), [PASCAL_HASH_CHAR, PASCAL_SINGLE_CHAR, PASCAL_STRING])))
+
+PSC_LEFT_PART = PSC_VAR + PSC_ASSIGN
+PSC_RIGHT_PART = r"(%s(?: \+ %s)*)\ *;" % (PSC_STRING_PART, PSC_STRING_PART, )
+PSC_STRING_CONST = PSC_LEFT_PART + PSC_RIGHT_PART
+
+RE_PSC_STRING_CONST = re.compile(PSC_STRING_CONST, re.I)
+
 
 def get_consts():
     source_filename = input("Enter `pascal` source file name: ")
@@ -22,15 +36,35 @@ def get_consts():
     if not result_filename:
         result_filename = "result.consts"
 
-    # c_pattern = r"""\w+\ *=\ *((".*?")|('.')|(\#))()?"""
+    ASSIGN_PATTERN = re.compile(r'(\w+ := .*?);')
+    PS_HASH_PAT = re.compile(PASCAL_HASH_CHAR)
+    PS_SINGLE_CHAR_PAT = re.compile(PASCAL_SINGLE_CHAR)
+    PS_STR_PAT = re.compile(PASCAL_STRING)
 
-    with open(source_filename) as source_file, open(result_filename, 'w') as result_file:
+    with open(source_filename) as source_file, open(result_filename, 'w', encoding='utf-8') as result_file:
         for line in source_file:
-            # check if const part is ended.
-            if re.match(r"(var)|(begin)", line, flags=re.I):
-                break
-            if re.search(r'(?<!:)=', line):
-                result_file.write(line)
+            print('---')
+            line = line.strip()
+            print(line)
+            match = ASSIGN_PATTERN.match(line)
+            if match:
+                print(match.groups())
+                match = match.group(1)
+                left, right = match.split(' := ', 1)
+                result = []
+                for part in right.split('+'):
+                    part = part.strip()
+                    print('part: ', part)
+                    if PS_HASH_PAT.match(part):
+                        try:
+                            result.append(chr(int(part[1:])))
+                        except:
+                            result.append('?')
+                    elif PS_SINGLE_CHAR_PAT.match(part):
+                        result.append(part[1])
+                    elif PS_STR_PAT.match(part):
+                        result.append(part[1:-1])
+                result_file.write('%s = %s\n' % (left, ''.join(result)))
 
 
 def split_pascal():

@@ -31,12 +31,25 @@ NUM_PATTERN = re.compile(r'\d+')
 
 STRUCT = (TOKEN, TYPE) = range(2)
 
-OPERATOR = {
+OPERATORS = {
     '/': truediv,
     '*': mul,
     '-': sub,
     '+': add,
 }
+
+OP_PRIORITIES = {
+    '*': 5,
+    '/': 5,
+    '+': 3,
+    '-': 3,
+    '=': 1
+}
+
+
+def get_op_priority(operator):
+    return OP_PRIORITIES[operator]
+
 
 def parse_expression():
 
@@ -44,7 +57,8 @@ def parse_expression():
 
     def assign(key, value):
         var_pool[key] = value
-    OPERATOR['='] = assign
+    OPERATORS['='] = assign
+
 
     _id = 0
     def get_obj_id():
@@ -135,7 +149,7 @@ def parse_expression():
             return ret
 
         def result(self):
-            return OPERATOR[self.operator](self.a.result(), self.b.result())
+            return OPERATORS[self.operator](self.a.result(), self.b.result())
 
         def __str__(self):
             return " [Triada #%s (%s %s %s)] " % (
@@ -154,12 +168,17 @@ def parse_expression():
         if len(tokens) == 1:
             return get_node(*tokens[0])
 
+        stack = deque()
+
         for n, token in enumerate(tokens):
-            if token[TYPE] == OPERATOR:
-                return get_triada(
-                    parse_triade(tokens[:n]),
-                    parse_triade(tokens[n+1:]),
-                    token[TOKEN])
+            if token[TYPE] == NUM or token[TYPE] == VAR:
+                stack.append(get_node(*token))
+            elif token[TYPE] == OPERATOR:
+                b = stack.pop()
+                a = stack.pop()
+                stack.append(get_triada(a, b, token[TOKEN]))
+        print("stack: ", stack)
+        return stack[0]
 
     expression = input('Enter expression: ')
     stack = deque()
@@ -170,17 +189,24 @@ def parse_expression():
 
     for token in tokens:
         if OPERATOR_PATTERN.match(token):
+            while (stack and
+                   get_op_priority(stack[-1][TOKEN]) >= get_op_priority(token)):
+                polish_stack.append(stack.pop())
             stack.append((token, OPERATOR))
         elif VAR_PATTERN.match(token):
             if token not in var_pool:
                 var_pool[token] = None
-            stack.append((token, VAR))
+            polish_stack.append((token, VAR))
         elif NUM_PATTERN.match(token):
-            stack.append((int(token), NUM))
+            polish_stack.append((int(token), NUM))
 
-    root_triada = parse_triade(list(stack))
-    print(root_triada.to_reverse_polish(True))
-    print(root_triada.tree())
+    while stack:
+        polish_stack.append(stack.pop())
+
+    print("HELLO: %s" % (list(polish_stack), ))
+    root_triada = parse_triade(list(polish_stack))
+    print("1: ", root_triada.to_reverse_polish(True))
+    print("2: ", root_triada.tree())
     print("result: %s" % (root_triada.result(), ))
     print("tokens:\n%s" % ("\n".join(map(str, triada_cache.values()), )))
 
